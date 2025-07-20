@@ -355,39 +355,39 @@ jobs:
     - name: Build with PyInstaller
       run: |
         # Build Windows executable
-        pyinstaller --onefile ^
-          --name "Plot3D" ^
-          --paths . ^
-          --collect-all ezodf ^
-          --collect-all lxml ^
-          --collect-all sklearn ^
-          --hidden-import=ezodf ^
-          --hidden-import=lxml ^
-          --hidden-import=lxml.etree ^
-          --hidden-import=lxml.objectify ^
-          --hidden-import=lxml.html ^
-          --hidden-import=lxml.builder ^
-          --hidden-import=lxml._elementpath ^
-          --hidden-import=lxml.includes ^
-          --add-data "logging_setup.py;." ^
-          --add-data "template_selector.py;." ^
-          --add-data "data_processor.py;." ^
-          --add-data "plot_utils.py;." ^
-          --add-data "axis_controls.py;." ^
-          --add-data "rotation_controls.py;." ^
-          --add-data "highlight_manager.py;." ^
-          --add-data "k_means_manager.py;." ^
-          --add-data "trendline_manager.py;." ^
-          --add-data "delta_e_manager.py;." ^
-          --add-data "sphere_manager.py;." ^
-          --add-data "reference_point_calculator.py;." ^
-          --add-data "group_display_manager.py;." ^
-          --add-data "zoom_controls.py;." ^
-          --add-data "rotary_knob.py;." ^
-          --add-data "delta_e_calculator.py;." ^
-          --add-data "assets;assets" ^
-          --add-data "logs;logs" ^
-          --add-data "zoom_presets.json;." ^
+        pyinstaller --onefile `
+          --name "Plot3D" `
+          --paths . `
+          --collect-all ezodf `
+          --collect-all lxml `
+          --collect-all sklearn `
+          --hidden-import=ezodf `
+          --hidden-import=lxml `
+          --hidden-import=lxml.etree `
+          --hidden-import=lxml.objectify `
+          --hidden-import=lxml.html `
+          --hidden-import=lxml.builder `
+          --hidden-import=lxml._elementpath `
+          --hidden-import=lxml.includes `
+          --add-data "logging_setup.py;." `
+          --add-data "template_selector.py;." `
+          --add-data "data_processor.py;." `
+          --add-data "plot_utils.py;." `
+          --add-data "axis_controls.py;." `
+          --add-data "rotation_controls.py;." `
+          --add-data "highlight_manager.py;." `
+          --add-data "k_means_manager.py;." `
+          --add-data "trendline_manager.py;." `
+          --add-data "delta_e_manager.py;." `
+          --add-data "sphere_manager.py;." `
+          --add-data "reference_point_calculator.py;." `
+          --add-data "group_display_manager.py;." `
+          --add-data "zoom_controls.py;." `
+          --add-data "rotary_knob.py;." `
+          --add-data "delta_e_calculator.py;." `
+          --add-data "assets;assets" `
+          --add-data "logs;logs" `
+          --add-data "zoom_presets.json;." `
           Plot_3D.py
           
     - name: Test the built executable
