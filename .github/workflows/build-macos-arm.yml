@@ -43,9 +43,11 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
+        # Add all local Python files to ensure they're included
         pyinstaller --onedir \
           --windowed \
           --name "Plot3D" \
+          --paths . \
           --collect-all ezodf \
           --collect-all lxml \
           --hidden-import=ezodf \
@@ -56,22 +58,22 @@ jobs:
           --hidden-import=lxml.builder \
           --hidden-import=lxml._elementpath \
           --hidden-import=lxml.includes \
-          --hidden-import=logging_setup \
-          --hidden-import=template_selector \
-          --hidden-import=data_processor \
-          --hidden-import=plot_utils \
-          --hidden-import=axis_controls \
-          --hidden-import=rotation_controls \
-          --hidden-import=highlight_manager \
-          --hidden-import=k_means_manager \
-          --hidden-import=trendline_manager \
-          --hidden-import=delta_e_manager \
-          --hidden-import=sphere_manager \
-          --hidden-import=reference_point_calculator \
-          --hidden-import=group_display_manager \
-          --hidden-import=zoom_controls \
-          --hidden-import=rotary_knob \
-          --hidden-import=delta_e_calculator \
+          --add-data "logging_setup.py:." \
+          --add-data "template_selector.py:." \
+          --add-data "data_processor.py:." \
+          --add-data "plot_utils.py:." \
+          --add-data "axis_controls.py:." \
+          --add-data "rotation_controls.py:." \
+          --add-data "highlight_manager.py:." \
+          --add-data "k_means_manager.py:." \
+          --add-data "trendline_manager.py:." \
+          --add-data "delta_e_manager.py:." \
+          --add-data "sphere_manager.py:." \
+          --add-data "reference_point_calculator.py:." \
+          --add-data "group_display_manager.py:." \
+          --add-data "zoom_controls.py:." \
+          --add-data "rotary_knob.py:." \
+          --add-data "delta_e_calculator.py:." \
           --add-data "assets:assets" \
           --add-data "logs:logs" \
           --add-data "zoom_presets.json:." \
