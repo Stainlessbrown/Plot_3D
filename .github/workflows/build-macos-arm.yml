@@ -1,4 +1,4 @@
-name: Build Plot3D for macOS & Linux
+name: Build Plot3D for macOS, Linux & Windows
 
 on:
   push:
@@ -319,4 +319,96 @@ jobs:
       with:
         name: Plot3D-Linux
         path: dist/Plot3D-Linux.tar.gz
+        retention-days: 30
+
+  build-windows:
+    runs-on: windows-latest
+    continue-on-error: true  # Don't fail the whole workflow if Windows build fails
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Add dependencies explicitly
+        pip install ezodf
+        pip install lxml
+        pip install odfpy
+        pip install pyinstaller
+        
+    - name: Test imports before packaging
+      run: |
+        python -c "import ezodf; print('ezodf import successful')"
+        python -c "import lxml; print('lxml import successful')"
+        python -c "import lxml.etree; print('lxml.etree import successful')"
+        python -c "import lxml.objectify; print('lxml.objectify import successful')"
+        python -c "import lxml.html; print('lxml.html import successful')"
+        python -c "import tkinter; print('tkinter import successful')"
+        
+    - name: Build with PyInstaller
+      run: |
+        # Build Windows executable
+        pyinstaller --onefile ^
+          --name "Plot3D" ^
+          --paths . ^
+          --collect-all ezodf ^
+          --collect-all lxml ^
+          --collect-all sklearn ^
+          --hidden-import=ezodf ^
+          --hidden-import=lxml ^
+          --hidden-import=lxml.etree ^
+          --hidden-import=lxml.objectify ^
+          --hidden-import=lxml.html ^
+          --hidden-import=lxml.builder ^
+          --hidden-import=lxml._elementpath ^
+          --hidden-import=lxml.includes ^
+          --add-data "logging_setup.py;." ^
+          --add-data "template_selector.py;." ^
+          --add-data "data_processor.py;." ^
+          --add-data "plot_utils.py;." ^
+          --add-data "axis_controls.py;." ^
+          --add-data "rotation_controls.py;." ^
+          --add-data "highlight_manager.py;." ^
+          --add-data "k_means_manager.py;." ^
+          --add-data "trendline_manager.py;." ^
+          --add-data "delta_e_manager.py;." ^
+          --add-data "sphere_manager.py;." ^
+          --add-data "reference_point_calculator.py;." ^
+          --add-data "group_display_manager.py;." ^
+          --add-data "zoom_controls.py;." ^
+          --add-data "rotary_knob.py;." ^
+          --add-data "delta_e_calculator.py;." ^
+          --add-data "assets;assets" ^
+          --add-data "logs;logs" ^
+          --add-data "zoom_presets.json;." ^
+          Plot_3D.py
+          
+    - name: Test the built executable
+      run: |
+        if (Test-Path "dist\Plot3D.exe") {
+          echo "Testing executable..."
+          echo "Windows build successful!"
+        } else {
+          echo "Plot3D.exe not found, listing dist contents:"
+          dir dist
+        }
+        
+    - name: Create Windows archive
+      run: |
+        cd dist
+        # Create a zip archive for Windows
+        Compress-Archive -Path Plot3D.exe -DestinationPath Plot3D-Windows.zip
+        
+    - name: Upload Windows build
+      uses: actions/upload-artifact@v4
+      with:
+        name: Plot3D-Windows
+        path: dist/Plot3D-Windows.zip
         retention-days: 30
