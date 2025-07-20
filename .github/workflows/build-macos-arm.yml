@@ -46,6 +46,8 @@ jobs:
         pyinstaller --onedir \
           --windowed \
           --name "Plot3D" \
+          --collect-all ezodf \
+          --collect-all lxml \
           --hidden-import=ezodf \
           --hidden-import=lxml \
           --hidden-import=lxml.etree \
@@ -53,6 +55,7 @@ jobs:
           --hidden-import=lxml.html \
           --hidden-import=lxml.builder \
           --hidden-import=lxml._elementpath \
+          --hidden-import=lxml.includes \
           --hidden-import=logging_setup \
           --hidden-import=template_selector \
           --hidden-import=data_processor \
