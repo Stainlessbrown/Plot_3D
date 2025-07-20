@@ -50,6 +50,7 @@ jobs:
           --paths . \
           --collect-all ezodf \
           --collect-all lxml \
+          --collect-all sklearn \
           --hidden-import=ezodf \
           --hidden-import=lxml \
           --hidden-import=lxml.etree \
