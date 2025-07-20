@@ -96,9 +96,15 @@ jobs:
           timeout 5 "dist/Plot3D.app/Contents/MacOS/Plot3D" || echo "App test completed"
         fi
         
+    - name: Create proper app bundle archive
+      run: |
+        cd dist
+        # Create a zip that preserves app bundle structure
+        zip -r Plot3D-macOS-ARM.zip Plot3D.app
+        
     - name: Upload macOS ARM build
       uses: actions/upload-artifact@v4
       with:
         name: Plot3D-macOS-ARM
-        path: dist/Plot3D.app
+        path: dist/Plot3D-macOS-ARM.zip
         retention-days: 30
