@@ -94,7 +94,7 @@ jobs:
         fi
         
     - name: Upload macOS ARM build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Plot3D-macOS-ARM
         path: dist/Plot3D.app
