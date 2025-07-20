@@ -1,0 +1,23 @@
+# Combined requirements for CropIt_V1.0 and Plot_3Dv1.8
+# Core dependencies
+numpy>=1.20.0
+Pillow>=9.0.0  # For image processing (used by CropIt)
+
+# Plotting and visualization
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Data manipulation
+pandas>=1.3.0
+
+# Machine Learning
+scikit-learn>=1.0.0  # For PCA and K-means clustering
+
+# Additional utilities for Plot_3D
+scipy>=1.7.0  # Required for various scientific computations
+networkx>=2.6.0  # For graph operations
+
+# Optional but recommended for better performance
+numba>=0.55.0  # For performance optimization
+pyinstaller>=5.13.0  # For creating standalone executables
+

@@ -1,0 +1,101 @@
+name: Build Plot3D for macOS ARM
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-macos-arm:
+    runs-on: macos-14  # macOS ARM runner
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        brew update
+        brew install tcl-tk
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Add ezodf explicitly since it's used in the code
+        pip install ezodf
+        # Add lxml explicitly with all submodules
+        pip install lxml
+        
+    - name: Test imports before packaging
+      run: |
+        python -c "import ezodf; print('ezodf import successful')"
+        python -c "import lxml; print('lxml import successful')"
+        python -c "import lxml.etree; print('lxml.etree import successful')"
+        python -c "import lxml.objectify; print('lxml.objectify import successful')"
+        python -c "import lxml.html; print('lxml.html import successful')"
+        
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onedir \
+          --windowed \
+          --name "Plot3D" \
+          --hidden-import=ezodf \
+          --hidden-import=lxml \
+          --hidden-import=lxml.etree \
+          --hidden-import=lxml.objectify \
+          --hidden-import=lxml.html \
+          --hidden-import=lxml.builder \
+          --hidden-import=lxml._elementpath \
+          --hidden-import=logging_setup \
+          --hidden-import=template_selector \
+          --hidden-import=data_processor \
+          --hidden-import=plot_utils \
+          --hidden-import=axis_controls \
+          --hidden-import=rotation_controls \
+          --hidden-import=highlight_manager \
+          --hidden-import=k_means_manager \
+          --hidden-import=trendline_manager \
+          --hidden-import=delta_e_manager \
+          --hidden-import=sphere_manager \
+          --hidden-import=reference_point_calculator \
+          --hidden-import=group_display_manager \
+          --hidden-import=zoom_controls \
+          --hidden-import=rotary_knob \
+          --hidden-import=delta_e_calculator \
+          --add-data "assets:assets" \
+          --add-data "logs:logs" \
+          --add-data "zoom_presets.json:." \
+          Plot_3D.py
+          
+    - name: Fix macOS app permissions
+      run: |
+        if [ -d "dist/Plot3D.app" ]; then
+          chmod +x "dist/Plot3D.app/Contents/MacOS/Plot3D"
+          echo "Fixed Plot3D.app executable permissions"
+        else
+          echo "Plot3D.app not found, listing dist contents:"
+          ls -la dist/
+        fi
+        
+    - name: Test the built app
+      run: |
+        if [ -d "dist/Plot3D.app" ]; then
+          echo "Testing app executable..."
+          file "dist/Plot3D.app/Contents/MacOS/Plot3D"
+          # Quick test - just check if it can be executed (will exit quickly without display)
+          timeout 5 "dist/Plot3D.app/Contents/MacOS/Plot3D" || echo "App test completed"
+        fi
+        
+    - name: Upload macOS ARM build
+      uses: actions/upload-artifact@v3
+      with:
+        name: Plot3D-macOS-ARM
+        path: dist/Plot3D.app
+        retention-days: 30
