@@ -32,6 +32,8 @@ jobs:
         pip install ezodf
         # Add lxml explicitly with all submodules
         pip install lxml
+        # Add odfpy for OpenDocument format support
+        pip install odfpy
         
     - name: Test imports before packaging
       run: |
