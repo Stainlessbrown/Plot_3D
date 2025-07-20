@@ -1,4 +1,4 @@
-name: Build Plot3D for macOS ARM
+name: Build Plot3D for macOS (ARM & Intel)
 
 on:
   push:
@@ -10,6 +10,114 @@ on:
 jobs:
   build-macos-arm:
     runs-on: macos-14  # macOS ARM runner
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        brew update
+        brew install tcl-tk
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Add ezodf explicitly since it's used in the code
+        pip install ezodf
+        # Add lxml explicitly with all submodules
+        pip install lxml
+        # Add odfpy for OpenDocument format support
+        pip install odfpy
+        
+    - name: Test imports before packaging
+      run: |
+        python -c "import ezodf; print('ezodf import successful')"
+        python -c "import lxml; print('lxml import successful')"
+        python -c "import lxml.etree; print('lxml.etree import successful')"
+        python -c "import lxml.objectify; print('lxml.objectify import successful')"
+        python -c "import lxml.html; print('lxml.html import successful')"
+        
+    - name: Build with PyInstaller
+      run: |
+        # Add all local Python files to ensure they're included
+        pyinstaller --onedir \
+          --windowed \
+          --name "Plot3D" \
+          --paths . \
+          --collect-all ezodf \
+          --collect-all lxml \
+          --collect-all sklearn \
+          --hidden-import=ezodf \
+          --hidden-import=lxml \
+          --hidden-import=lxml.etree \
+          --hidden-import=lxml.objectify \
+          --hidden-import=lxml.html \
+          --hidden-import=lxml.builder \
+          --hidden-import=lxml._elementpath \
+          --hidden-import=lxml.includes \
+          --add-data "logging_setup.py:." \
+          --add-data "template_selector.py:." \
+          --add-data "data_processor.py:." \
+          --add-data "plot_utils.py:." \
+          --add-data "axis_controls.py:." \
+          --add-data "rotation_controls.py:." \
+          --add-data "zoom_controls.py:." \
+          --add-data "rotary_knob.py:." \
+          --add-data "delta_e_calculator.py:." \
+          --add-data "rotation_controls.py:." \
+          --add-data "highlight_manager.py:." \
+          --add-data "k_means_manager.py:." \
+          --add-data "trendline_manager.py:." \
+          --add-data "delta_e_manager.py:." \
+          --add-data "sphere_manager.py:." \
+          --add-data "reference_point_calculator.py:." \
+          --add-data "group_display_manager.py:." \
+          --add-data "assets:assets" \
+          --add-data "logs:logs" \
+          --add-data "zoom_presets.json:." \
+          --icon=assets/icon.icns \
+          Plot_3D.py
+          
+    - name: Fix macOS app permissions
+      run: |
+        if [ -d "dist/Plot3D.app" ]; then
+          chmod +x "dist/Plot3D.app/Contents/MacOS/Plot3D"
+          echo "Fixed Plot3D.app executable permissions"
+        else
+          echo "Plot3D.app not found, listing dist contents:"
+          ls -la dist/
+        fi
+        
+    - name: Test the built app
+      run: |
+        if [ -d "dist/Plot3D.app" ]; then
+          echo "Testing app executable..."
+          file "dist/Plot3D.app/Contents/MacOS/Plot3D"
+          # Quick test - just check if it can be executed (will exit quickly without display)
+          timeout 5 "dist/Plot3D.app/Contents/MacOS/Plot3D" || echo "App test completed"
+        fi
+        
+    - name: Create proper app bundle archive
+      run: |
+        cd dist
+        # Create a zip that preserves app bundle structure
+        zip -r Plot3D-macOS-ARM.zip Plot3D.app
+        
+    - name: Upload macOS ARM build
+      uses: actions/upload-artifact@v4
+      with:
+        name: Plot3D-macOS-ARM
+        path: dist/Plot3D-macOS-ARM.zip
+        retention-days: 30
+
+  build-macos-intel:
+    runs-on: macos-13  # macOS Intel runner
     
     steps:
     - uses: actions/checkout@v4
@@ -106,11 +214,11 @@ jobs:
       run: |
         cd dist
         # Create a zip that preserves app bundle structure
-        zip -r Plot3D-macOS-ARM.zip Plot3D.app
+        zip -r Plot3D-macOS-Intel.zip Plot3D.app
         
-    - name: Upload macOS ARM build
+    - name: Upload macOS Intel build
       uses: actions/upload-artifact@v4
       with:
-        name: Plot3D-macOS-ARM
-        path: dist/Plot3D-macOS-ARM.zip
+        name: Plot3D-macOS-Intel
+        path: dist/Plot3D-macOS-Intel.zip
         retention-days: 30
