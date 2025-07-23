@@ -558,6 +558,100 @@ class Plot3DApp:
                              fontsize=10, color='black', bbox=dict(facecolor='white', alpha=0.7))
                 except Exception as e:
                     print(f"Error plotting trendline: {str(e)}")
+            
+            # Handle color-filtered trend lines
+            colors = ['red', 'green', 'blue']
+            color_vars = [self.show_red_trendline, self.show_green_trendline, self.show_blue_trendline]
+            line_styles = ['--', '-.', ':']
+            equation_y_positions = [0.85, 0.80, 0.75]  # Y positions for equations display
+            
+            for color, show_var, line_style, eq_y_pos in zip(colors, color_vars, line_styles, equation_y_positions):
+                if show_var.get():
+                    try:
+                        print(f"Starting {color} trendline calculation...")
+                        valid_df = self.df[self.df['trendline_valid']].copy()
+                        
+                        # Get color-filtered trend line points
+                        points = self.trendline_manager.get_color_trendline_points(valid_df, color)
+                        
+                        if points is not None:
+                            # Get equation parameters for display
+                            equation = self.trendline_manager.get_color_line_equation(color)
+                            
+                            if equation is not None:
+                                a, b, c = equation
+                                print(f"{color.capitalize()} regression parameters: a={a}, b={b}, c={c}")
+                                
+                                # Use PCA approach for better line visualization (similar to main trendline)
+                                color_df = valid_df[valid_df['Color'].str.lower() == color.lower()].copy()
+                                color_clean = color_df.dropna(subset=['Xnorm', 'Ynorm', 'Znorm'])
+                                
+                                if len(color_clean) > 2:
+                                    x_values = color_clean['Xnorm'].values
+                                    y_values = color_clean['Ynorm'].values
+                                    
+                                    # Calculate centroid
+                                    x_mean = color_clean['Xnorm'].mean()
+                                    y_mean = color_clean['Ynorm'].mean()
+                                    
+                                    # Calculate ranges
+                                    x_min, x_max = min(x_values), max(x_values)
+                                    y_min, y_max = min(y_values), max(y_values)
+                                    x_range = x_max - x_min
+                                    y_range = y_max - y_min
+                                    
+                                    try:
+                                        # Use PCA for better directional visualization
+                                        from sklearn.decomposition import PCA
+                                        
+                                        xy_data = np.vstack([x_values, y_values]).T
+                                        pca = PCA(n_components=1)
+                                        pca.fit(xy_data)
+                                        
+                                        direction = pca.components_[0]
+                                        scale = max(x_range, y_range) * 1.5
+                                        
+                                        t = np.linspace(-scale, scale, 100)
+                                        line_x = x_mean + direction[0] * t
+                                        line_y = y_mean + direction[1] * t
+                                        line_z = a * line_x + b * line_y + c
+                                        
+                                    except Exception as pca_error:
+                                        print(f"PCA failed for {color}: {pca_error}. Using fallback.")
+                                        # Fallback method
+                                        num_points = 100
+                                        t = np.linspace(-1, 1, num_points)
+                                        line_x = x_mean + t * x_range
+                                        line_y = y_mean + t * y_range
+                                        line_z = a * line_x + b * line_y + c
+                                    
+                                    # Plot the color-filtered trendline
+                                    ax.plot3D(
+                                        line_x,
+                                        line_y,
+                                        line_z,
+                                        color=color,
+                                        linestyle=line_style,
+                                        linewidth=1.0,
+                                        alpha=0.8,
+                                        label=f'{color.capitalize()} Trendline',
+                                        zorder=25
+                                    )
+                                    
+                                    # Display equation
+                                    eq_text = f"{color[0].upper()}: z = {a:.4f}x + {b:.4f}y + {c:.4f}"
+                                    ax.text2D(0.05, eq_y_pos, eq_text, transform=ax.transAxes,
+                                             fontsize=9, color=color, 
+                                             bbox=dict(facecolor='white', alpha=0.7))
+                                else:
+                                    print(f"Not enough {color} data points for trendline")
+                            else:
+                                print(f"No valid equation for {color} trendline")
+                        else:
+                            print(f"No valid points for {color} trendline")
+                            
+                    except Exception as e:
+                        print(f"Error plotting {color} trendline: {str(e)}")
                 
             # Handle polynomial surface drawing if checkbox is checked
             if self.show_polynomial.get():
@@ -778,9 +872,13 @@ class Plot3DApp:
         }
         
         # Initialize show_trendline and show_polynomial variables here instead of in _init_ui
-        # Initialize show_trendline and show_polynomial variables here instead of in _init_ui
         self.show_trendline = tk.BooleanVar(value=False)
         self.show_polynomial = tk.BooleanVar(value=False)
+        
+        # Initialize color-filtered trend line variables
+        self.show_red_trendline = tk.BooleanVar(value=False)
+        self.show_green_trendline = tk.BooleanVar(value=False)
+        self.show_blue_trendline = tk.BooleanVar(value=False)
         
     def _create_sphere_visibility_frame(self):
         """Create frame for sphere visibility toggles."""
@@ -1087,6 +1185,31 @@ class Plot3DApp:
             variable=self.show_trendline,
             command=self.refresh_plot
         ).grid(row=0, column=0, sticky='w', padx=5, pady=5)
+        
+        # Add color-filtered trendline toggles (R, G, B) on the same row
+        ttk.Checkbutton(
+            self.trendline_frame,
+            text="R",
+            variable=self.show_red_trendline,
+            command=self.refresh_plot,
+            width=3
+        ).grid(row=0, column=1, sticky='w', padx=2, pady=5)
+        
+        ttk.Checkbutton(
+            self.trendline_frame,
+            text="G",
+            variable=self.show_green_trendline,
+            command=self.refresh_plot,
+            width=3
+        ).grid(row=0, column=2, sticky='w', padx=2, pady=5)
+        
+        ttk.Checkbutton(
+            self.trendline_frame,
+            text="B",
+            variable=self.show_blue_trendline,
+            command=self.refresh_plot,
+            width=3
+        ).grid(row=0, column=3, sticky='w', padx=2, pady=5)
         
         # Add polynomial toggle
         ttk.Checkbutton(
