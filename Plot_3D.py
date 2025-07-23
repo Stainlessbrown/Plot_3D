@@ -594,11 +594,14 @@ class Plot3DApp:
                                     x_mean = color_clean['Xnorm'].mean()
                                     y_mean = color_clean['Ynorm'].mean()
                                     
-                                    # Calculate ranges
-                                    x_min, x_max = min(x_values), max(x_values)
-                                    y_min, y_max = min(y_values), max(y_values)
-                                    x_range = x_max - x_min
-                                    y_range = y_max - y_min
+                                    # Calculate ranges using ALL data points (like main trendline)
+                                    all_data_df = valid_df  # This contains all points
+                                    all_x_values = all_data_df['Xnorm'].values  
+                                    all_y_values = all_data_df['Ynorm'].values
+                                    all_x_min, all_x_max = min(all_x_values), max(all_x_values)
+                                    all_y_min, all_y_max = min(all_y_values), max(all_y_values) 
+                                    x_range = all_x_max - all_x_min  # Use ALL data range
+                                    y_range = all_y_max - all_y_min  # Use ALL data range
                                     
                                     try:
                                         # Use PCA for better directional visualization
