@@ -1132,6 +1132,14 @@ class Plot3DApp:
         # Ensure the control frame can expand properly
         self.control_frame.grid_columnconfigure(0, weight=1)
         
+        # Add K-means clustering controls
+        kmeans_frame = self.kmeans_manager.create_gui(self.control_frame)
+        kmeans_frame.grid(row=4, column=0, sticky='ew', padx=5, pady=5)
+        
+        # Add Delta E calculation controls
+        delta_e_frame = self.delta_e_manager.create_gui(self.control_frame)
+        delta_e_frame.grid(row=5, column=0, sticky='ew', padx=5, pady=5)
+        
         button_frame = create_button_frame(self.control_frame, on_refresh=self.refresh_plot)
         button_frame.grid(row=6, column=0, sticky='ew', padx=5, pady=5)
 
