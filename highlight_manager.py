@@ -13,10 +13,10 @@ class HighlightManager:
         self.data_df = data_df
         self.use_rgb = use_rgb
         
-        # Initialize highlight scatter
-        self.highlight_scatter = None
-        self.highlight_text = None
-        self.highlight_line = None
+        # Initialize highlight lists for multiple highlights
+        self.highlight_scatters = []
+        self.highlight_texts = []
+        self.highlight_lines = []
         
         # Data tracking variables for debugging
         self.data_id_to_index = {}       # Map DataID to current DataFrame index
@@ -60,7 +60,7 @@ class HighlightManager:
             row_frame.grid(row=1, column=0, columnspan=2, sticky='ew', padx=5)
             row_frame.grid_columnconfigure(1, weight=1)
             
-            row_label = tk.Label(row_frame, text="Row #:")
+            row_label = tk.Label(row_frame, text="Row #(s):")
             row_label.grid(row=0, column=0, sticky='e', padx=(5,2))
             self.row_entry = tk.Entry(row_frame, width=8)
             self.row_entry.grid(row=0, column=1, sticky='w', padx=(2,5))
@@ -258,41 +258,32 @@ class HighlightManager:
             return max(0, min(user_row - 2, len(self.data_df) - 1))
 
     def _highlight_data(self):
-        """Highlight the data point for the entered row number"""
+        """Highlight the data points for the entered row numbers"""
         try:
-            # Save the entered row value so we don't lose it
-            entered_row = self.row_entry.get()
-            print(f"DEBUG: Attempting to highlight row: {entered_row}")
+            # Clear existing highlights first
+            self._clear_highlight(keep_entry=True)
             
-            # Convert user input to integer
-            user_row = int(entered_row)
-            
-            # Find corresponding DataFrame index
-            df_index = self.find_df_index(user_row)
-            
-            if 0 <= df_index < len(self.data_df):
-                # Get the DataID for validation
-                data_id = self.data_df.iloc[df_index]['DataID'] if 'DataID' in self.data_df.columns else None
+            # Get the entered row numbers and split by comma
+            entered_rows = self.row_entry.get()
+            row_numbers = [int(row.strip()) for row in entered_rows.split(',')]
+
+            # Iterate over each row number
+            for user_row in row_numbers:
+                print(f"DEBUG: Attempting to highlight row: {user_row}")
+                # Find corresponding DataFrame index
+                df_index = self.find_df_index(user_row)
                 
-                # Extra verification for scatter point mapping
-                if self.sorting_applied and data_id in self.data_id_to_scatter_idx:
-                    scatter_idx = self.data_id_to_scatter_idx[data_id]
-                    print(f"DEBUG: Row {user_row} maps to DataFrame index {df_index} with DataID {data_id}, which maps to scatter index {scatter_idx}")
-                    
-                    # Verify that the DataID at this index matches what we expect
-                    if data_id != self.data_df.iloc[df_index]['DataID']:
-                        print(f"ERROR: DataID mismatch at index {df_index}! Expected {data_id}, found {self.data_df.iloc[df_index]['DataID']}")
-                
-                # When sorting is applied, we still use the DataFrame index for highlighting
-                # because we want the coordinates from the sorted DataFrame
-                self._highlight_point(df_index)
-                print(f"Highlighting data from row {user_row} (DataFrame index: {df_index})")
-            else:
-                print(f"Row {user_row} is out of range. Valid rows are 2 to {len(self.data_df) + 1}")
+                if 0 <= df_index < len(self.data_df):
+                    # Highlight the point
+                    self._highlight_point(df_index)
+                    print(f"Highlighting data from row {user_row} (DataFrame index: {df_index})")
+                else:
+                    print(f"Row {user_row} is out of range. Valid rows are 2 to {len(self.data_df) + 1}")
+        
         except ValueError:
-            print("Please enter a valid row number")
+            print("Please enter valid row numbers")
         except Exception as e:
-            print(f"Error highlighting data: {str(e)}")
+            print(f"Error highlighting data points: {str(e)}")
             import traceback
             traceback.print_exc()
             
@@ -351,8 +342,7 @@ class HighlightManager:
         """Highlight the selected point"""
         try:
             print(f"DEBUG: Highlighting point at index {idx}")
-            # Clear existing highlight without clearing the entry
-            self._clear_highlight(keep_entry=True)
+            # Don't clear existing highlights to allow multiple highlights
             
             # Get normalized point coordinates and DataID from the DataFrame
             # This must be done first before any other operations
@@ -468,7 +458,7 @@ class HighlightManager:
             # We're highlighting using coordinates, which is the correct approach
             # The issue occurs when trying to match scatter plot points by index
             
-            self.highlight_scatter = self.ax.scatter(
+            highlight_scatter = self.ax.scatter(
                 [x], [y], [z],
                 facecolors='none',
                 edgecolors='black',
@@ -477,6 +467,7 @@ class HighlightManager:
                 linewidth=2,
                 zorder=1000
             )
+            self.highlight_scatters.append(highlight_scatter)
             
             # Store the fact that we highlighted this specific point
             print(f"DEBUG: Highlighted DataID {data_id} (DataFrame index: {idx}, Scatter index: {scatter_idx})")
@@ -488,16 +479,17 @@ class HighlightManager:
             
             # Use text3D for proper 3D annotation
             print(f"DEBUG: Creating text3D at ({text_x}, {text_y}, {text_z})")
-            self.highlight_text = self.ax.text(
+            highlight_text = self.ax.text(
                 text_x, text_y, text_z,
                 f'{data_id}',
                 color='red',
                 zorder=1000
             )
+            self.highlight_texts.append(highlight_text)
             
             # Create a dotted line connecting the point and the text
             print(f"DEBUG: Creating dotted line from ({x}, {y}, {z}) to ({text_x}, {text_y}, {text_z})")
-            self.highlight_line = Line3D(
+            highlight_line = Line3D(
                 [x, text_x],
                 [y, text_y],
                 [z, text_z],
@@ -505,7 +497,8 @@ class HighlightManager:
                 color='black',
                 zorder=999
             )
-            self.ax.add_line(self.highlight_line)
+            self.ax.add_line(highlight_line)
+            self.highlight_lines.append(highlight_line)
             
             # Print selected point info
             print(f"Selected row index: {idx}")
@@ -522,42 +515,39 @@ class HighlightManager:
             traceback.print_exc()
         
     def _clear_highlight(self, keep_entry=False):
-        """Clear the current highlight"""
+        """Clear all current highlights"""
         try:
-            print("DEBUG: Clearing highlight")
+            print("DEBUG: Clearing all highlights")
             
-            # Only try to remove if the object exists and is part of the plot
-            if self.highlight_scatter is not None:
+            # Remove all highlight scatters
+            for scatter in self.highlight_scatters:
                 try:
-                    if self.highlight_scatter in self.ax.collections:
-                        self.highlight_scatter.remove()
-                    self.highlight_scatter = None
+                    if scatter in self.ax.collections:
+                        scatter.remove()
                     print("DEBUG: Removed highlight scatter")
                 except Exception as e:
                     print(f"DEBUG: Could not remove scatter: {e}")
-                    self.highlight_scatter = None
+            self.highlight_scatters = []
                 
-            # Similar safe removal for text
-            if self.highlight_text is not None:
+            # Remove all highlight texts
+            for text in self.highlight_texts:
                 try:
-                    if self.highlight_text in self.ax.texts:
-                        self.highlight_text.remove()
-                    self.highlight_text = None
+                    if text in self.ax.texts:
+                        text.remove()
                     print("DEBUG: Removed highlight text")
                 except Exception as e:
                     print(f"DEBUG: Could not remove text: {e}")
-                    self.highlight_text = None
+            self.highlight_texts = []
 
-            # Similar safe removal for line
-            if self.highlight_line is not None:
+            # Remove all highlight lines
+            for line in self.highlight_lines:
                 try:
-                    if self.highlight_line in self.ax.lines:
-                        self.highlight_line.remove()
-                    self.highlight_line = None
+                    if line in self.ax.lines:
+                        line.remove()
                     print("DEBUG: Removed highlight line")
                 except Exception as e:
                     print(f"DEBUG: Could not remove line: {e}")
-                    self.highlight_line = None
+            self.highlight_lines = []
                 
             # Clear the row entry unless keep_entry is True
             if not keep_entry:
